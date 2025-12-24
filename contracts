@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract CertificateRegistry {
+    struct Certificate {
+        string propFirmId;
+        string certHash;   // hash của file certificate (IPFS CID hoặc SHA256)
+        uint256 timestamp;
+        address issuer;
+    }
+
+    // subject_id => Certificate
+    mapping(string => Certificate) private certificates;
+
+    event CertificateStored(
+        string indexed subjectId,
+        string propFirmId,
+        string certHash,
+        uint256 timestamp,
+        address issuer
+    );
+
+    function storeHash(
+        string calldata subjectId,
+        string calldata propFirmId,
+        string calldata certHash
+    ) external {
+        require(bytes(certificates[subjectId].certHash).length == 0, "Already stored");
+
+        certificates[subjectId] = Certificate({
+            propFirmId: propFirmId,
+            certHash: certHash,
+            timestamp: block.timestamp,
+            issuer: msg.sender
+        });
+
+        emit CertificateStored(
+            subjectId,
+            propFirmId,
+            certHash,
+            block.timestamp,
+            msg.sender
+        );
+    }
+
+    function getCertificate(string calldata subjectId)
+        external
+        view
+        returns (
+            string memory propFirmId,
+            string memory certHash,
+            uint256 timestamp,
+            address issuer
+        )
+    {
+        Certificate memory cert = certificates[subjectId];
+        require(bytes(cert.certHash).length != 0, "Not found");
+
+        return (
+            cert.propFirmId,
+            cert.certHash,
+            cert.timestamp,
+            cert.issuer
+        );
+    }
+}
